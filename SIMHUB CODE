@@ -1,0 +1,64 @@
+// ===============================
+// SIMHUB UNIFIED TELEMETRY SCRIPT
+// Supports F1 25, Assetto Corsa, other sims
+// ===============================
+
+var gear = 'N';
+var rpm = 0;
+var revPercent = -1;
+var drs = 0;
+var pit = 0;
+var maxRpm = 8500; // ===== Default fallback =====
+
+
+// ===============================
+// ===== F1 SERIES DETECTION =====
+// ===============================
+if (NewRawData().PlayerCarTelemetryData) {
+
+    var t = NewRawData().PlayerCarTelemetryData;
+    var s = NewRawData().PlayerCarStatusData;
+
+    var rawGear = t.m_gear || 0;
+    gear = (rawGear == -1) ? 'R' : (rawGear == 0 ? 'N' : String(rawGear));
+
+    rpm = t.m_engineRPM || 0;
+    revPercent = Math.floor(t.m_revLightsPercent || 0);
+
+    drs = t.m_drs ? 1 : 0;
+    pit = s.m_pitLimiterStatus ? 1 : 0;
+
+    maxRpm = 12000; // ===== F1 engines =====
+}
+
+
+// ===============================
+// ===== OTHER SIMS (AC etc.) ====
+// ===============================
+else if (NewRawData().Physics) {
+
+    var p = NewRawData().Physics;
+
+    var rawGear = p.Gear || 0;
+    gear = (rawGear == 0) ? 'R' : (rawGear == 1 ? 'N' : String(rawGear - 1));
+
+    rpm = p.Rpms || 0;
+
+    // ===== Use real MaxRPM from sim =====
+    maxRpm = (NewRawData().StaticInfo && NewRawData().StaticInfo.MaxRpm)
+        ? NewRawData().StaticInfo.MaxRpm
+        : 8500;
+
+    drs = 0;
+    pit = 0;
+}
+
+
+// ===============================
+// ===== MINIMAL SERIAL OUTPUT ====
+// ===============================
+return 'GEAR:' + gear +
+       ' RPM:' + Math.floor(rpm) +
+       ' MAX:' + maxRpm +
+       ' DRS:' + drs +
+       ' PIT:' + pit + '\n';
