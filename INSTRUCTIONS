@@ -1,0 +1,157 @@
+# Sim Racing OLED Dash – Setup Guide
+
+🚧 Work In Progress  
+This guide explains how to wire and use the Arduino OLED Dash firmware.
+
+---
+
+## Overview
+
+This project uses:
+
+- Arduino-compatible board
+- 128x64 SH1106 OLED display (SPI)
+- SimHub for telemetry output
+
+The firmware receives telemetry data from SimHub via Serial and displays:
+
+- Gear
+- RPM bar
+- RB-style shift logic
+- DRS indicator
+- Pit limiter screen
+
+---
+
+# Hardware Wiring
+
+## OLED Display (SH1106 SPI)
+
+This project uses a 4-wire SPI OLED.
+
+### Pin Connections
+
+| OLED Pin | Arduino Pin |
+|----------|-------------|
+| VCC      | 5V (or 3.3V if required) |
+| GND      | GND |
+| CLK      | 13 (SCK) |
+| MOSI     | 11 (MOSI) |
+| CS       | 10 |
+| DC       | 9 |
+| RES      | 8 |
+
+⚠️ If your OLED is 3.3V only, do NOT use 5V.
+
+---
+
+# Software Setup
+
+## 1. Install Arduino IDE
+
+Download from:
+https://www.arduino.cc/en/software
+
+---
+
+## 2. Install Required Library
+
+In Arduino IDE:
+
+Sketch → Include Library → Manage Libraries  
+Search for:
+
+U8g2
+
+Install:
+**U8g2 by oliver**
+
+---
+
+## 3. Upload Firmware
+
+1. Open the `.ino` file.
+2. Select your board:
+   Tools → Board
+3. Select correct COM port.
+4. Click Upload.
+
+---
+
+# SimHub Setup
+
+## 1. Install SimHub
+
+Download:
+https://www.simhubdash.com/
+
+---
+
+## 2. Create Custom Serial Device
+
+In SimHub:
+
+1. Go to **Arduino**
+2. Add a new **Custom Serial Device**
+3. Select correct COM port
+4. Set baud rate to:
+
+115200
+
+---
+
+## 3. Paste the JavaScript Code
+
+Paste the provided telemetry script into:
+
+Custom Protocol → JavaScript
+
+Make sure the output format matches:
+
+GEAR: RPM: MAX: DRS: PIT:
+
+---
+
+# Modes
+
+## Standard Mode
+- Proportional RPM bar
+- Uses simulator MaxRPM
+
+## RB Mode
+- Half bar at 10,000 RPM
+- Full bar at 11,600 RPM
+- Flash above 12,200 RPM
+
+---
+
+# Supported Sims
+
+- F1 Series (UDP)
+- Assetto Corsa
+- Other SimHub-compatible titles
+
+---
+
+# Troubleshooting
+
+### Nothing appears on screen
+- Check wiring
+- Confirm correct COM port
+- Confirm baud rate = 115200
+- Ensure SimHub is running
+
+### RPM bar fills too fast
+- Verify MaxRPM is being received from SimHub
+
+### Display flickers
+- Ensure proper power supply
+- Avoid long unshielded wires
+
+---
+
+# Important
+
+This project is licensed for personal, non-commercial use only.
+
+Do not sell or redistribute commercially.
