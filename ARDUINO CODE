@@ -1,0 +1,228 @@
+/*
+  Sim Racing OLED Dash
+  AI-assisted development
+  Personal / Non-commercial use only
+*/
+
+#include <U8g2lib.h>
+
+// ===== OLED SETUP =====
+U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, 10, 9, 8);
+
+// ===== MODE BUTTON =====
+#define BUTTON_PIN 2
+
+// ===== TELEMETRY VARIABLES =====
+String gear = "N";
+int rpm = 0;
+int maxRpm = 8500;
+int drsActive = 0;
+int pitLimiter = 0;
+
+// ===== MODE CONTROL =====
+bool rbMode = true;
+bool lastButtonState = HIGH;
+
+// ===== SHIFT WINDOW (RB MODE) =====
+int prepareRpm  = 10000;  // Half bar
+int shiftRpm    = 11600;  // Full bar
+int limiterRpm  = 12200;  // Flash
+
+// ===== FLASH CONTROL =====
+unsigned long lastFlash = 0;
+bool flashState = false;
+
+// ===== SERIAL BUFFER =====
+String input = "";
+
+
+// =====================================================
+// ==================== SETUP ==========================
+// =====================================================
+void setup() {
+  Serial.begin(115200);
+  u8g2.begin();
+  u8g2.setContrast(235);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  startupSweep();
+}
+
+
+// =====================================================
+// ===================== LOOP ==========================
+// =====================================================
+void loop() {
+
+  handleButton();
+  readSerial();
+
+  u8g2.clearBuffer();
+
+  if (pitLimiter) {
+    drawPitLimiter();
+  } else {
+    drawGear();
+    drawTopLEDs();
+    drawShiftBar();
+    drawDRS();
+  }
+
+  u8g2.sendBuffer();
+  delay(5);
+}
+
+
+// =====================================================
+// ================= BUTTON TOGGLE =====================
+// =====================================================
+void handleButton() {
+  bool state = digitalRead(BUTTON_PIN);
+  if (lastButtonState == HIGH && state == LOW) {
+    rbMode = !rbMode;
+    delay(200);
+  }
+  lastButtonState = state;
+}
+
+
+// =====================================================
+// ================= SERIAL PARSE ======================
+// =====================================================
+void readSerial() {
+  while (Serial.available()) {
+    char c = Serial.read();
+    if (c == '\n') {
+      parseInput(input);
+      input = "";
+    } else {
+      input += c;
+    }
+  }
+}
+
+void parseInput(String s) {
+
+  extractInt(s, "RPM:", rpm);
+  extractInt(s, "MAX:", maxRpm);
+  extractInt(s, "DRS:", drsActive);
+  extractInt(s, "PIT:", pitLimiter);
+
+  int gIndex = s.indexOf("GEAR:");
+  if (gIndex >= 0) {
+    int start = gIndex + 5;
+    int end = s.indexOf(' ', start);
+    if (end < 0) end = s.length();
+    gear = s.substring(start, end);
+    gear.trim();
+  }
+}
+
+void extractInt(String s, String key, int &var) {
+  int index = s.indexOf(key);
+  if (index >= 0) {
+    int start = index + key.length();
+    int end = s.indexOf(' ', start);
+    if (end < 0) end = s.length();
+    var = s.substring(start, end).toInt();
+  }
+}
+
+
+// =====================================================
+// ================= DRAW FUNCTIONS ====================
+// =====================================================
+
+void drawGear() {
+  u8g2.setFont(u8g2_font_logisoso42_tf);
+  int w = u8g2.getStrWidth(gear.c_str());
+  u8g2.drawStr((128 - w) / 2, 45, gear.c_str());
+
+  u8g2.setFont(u8g2_font_5x7_tf);
+  if (rbMode) u8g2.drawStr(2, 10, "RB");
+  else u8g2.drawStr(2, 10, "STD");
+}
+
+
+// ===== SHIFT BAR =====
+void drawShiftBar() {
+
+  u8g2.drawFrame(14, 55, 100, 8);
+
+  // ===== STANDARD MODE =====
+  if (!rbMode) {
+    int width = map(rpm, 0, maxRpm, 0, 100);
+    width = constrain(width, 0, 100);
+    u8g2.drawBox(14, 55, width, 8);
+    return;
+  }
+
+  // ===== RB MODE LOGIC =====
+  if (rpm < prepareRpm) {
+    return;
+  }
+  else if (rpm < shiftRpm) {
+    u8g2.drawBox(14, 55, 50, 8);  // Half bar
+  }
+  else if (rpm < limiterRpm) {
+    u8g2.drawBox(14, 55, 100, 8); // Full bar
+  }
+  else {
+    if (millis() - lastFlash > 60) {
+      flashState = !flashState;
+      lastFlash = millis();
+    }
+    if (flashState)
+      u8g2.drawBox(14, 55, 100, 8);
+  }
+}
+
+
+// ===== TOP LED STRIP =====
+void drawTopLEDs() {
+
+  if (!rbMode) return;
+
+  int leds = 0;
+
+  if (rpm >= prepareRpm)
+    leds = map(rpm, prepareRpm, limiterRpm, 0, 10);
+
+  leds = constrain(leds, 0, 10);
+
+  for (int i = 0; i < leds; i++) {
+    u8g2.drawBox(14 + i * 10, 50, 8, 3);
+  }
+
+  if (rpm >= limiterRpm && flashState) {
+    for (int i = 0; i < 10; i++)
+      u8g2.drawBox(14 + i * 10, 50, 8, 3);
+  }
+}
+
+
+// ===== DRS INDICATOR =====
+void drawDRS() {
+  if (drsActive) {
+    u8g2.setFont(u8g2_font_6x10_tf);
+    u8g2.drawStr(90, 25, "DRS");
+  }
+}
+
+
+// ===== PIT LIMITER SCREEN =====
+void drawPitLimiter() {
+  u8g2.setFont(u8g2_font_logisoso32_tf);
+  u8g2.drawStr(20, 40, "PIT");
+}
+
+
+// ===== STARTUP ANIMATION =====
+void startupSweep() {
+  for (int i = 0; i < 10; i++) {
+    u8g2.clearBuffer();
+    for (int j = 0; j <= i; j++)
+      u8g2.drawBox(14 + j * 10, 50, 8, 3);
+    u8g2.sendBuffer();
+    delay(40);
+  }
+}
