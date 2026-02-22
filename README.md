@@ -41,7 +41,7 @@ Features:
 
 ## Hardware Requirements
 
-- Arduino-compatible board
+- Arduino-compatible board (UNO R4 RECCOMENDED)
 - 128x64 SH1106 OLED display
 - SimHub (or compatible telemetry output)
 - Basic wiring knowledge
