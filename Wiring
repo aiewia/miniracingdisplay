@@ -1,0 +1,104 @@
+🔌 Wiring Guide – DIY Sim Racing OLED Dash
+
+This document explains how to wire the SH1106 OLED display and button to an Arduino UNO R4 for the Sim Racing Telemetry Dash project.
+
+🧠 Hardware Required
+
+Arduino UNO R4
+
+SH1106 128x64 SPI OLED Display
+
+1x Push Button (momentary)
+
+Jumper wires
+
+Breadboard (optional)
+
+🖥 OLED Wiring (SPI Mode)
+
+⚠ IMPORTANT:
+Your OLED must be configured in SPI mode, NOT I2C.
+
+Pin Connections
+OLED Pin	Connect To (UNO R4)
+VCC	5V
+GND	GND
+SCK	Pin 13
+SDA (MOSI)	Pin 11
+CS	Pin 10
+DC	Pin 9
+RES (RST)	Pin 8
+
+🔘 Mode Toggle Button Wiring
+
+The button is used to toggle display modes.
+
+Button Side	Connect To
+One side	GND
+Other side	Pin 2
+
+No external resistor required.
+
+The firmware uses the internal pull-up resistor:
+
+pinMode(BUTTON_PIN, INPUT_PULLUP);
+
+This means:
+
+Button pressed → LOW
+
+Button released → HIGH
+
+The Arduino UNO R4 provides sufficient 5V power for the OLED.
+
+If you experience flickering:
+
+Check ground connection
+
+Shorten SPI wires
+
+Ensure secure breadboard contacts
+
+🧪 Troubleshooting
+
+Screen Is Blank
+
+Confirm OLED is set to SPI mode
+
+Verify wiring matches table above
+
+Confirm correct constructor in firmware:
+
+U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, 10, 9, 8);
+
+Confirm Serial Monitor baud rate is 115200
+
+
+Button Not Working
+
+Confirm one side is connected to GND
+
+Confirm other side is connected to Pin 2
+
+Verify firmware uses INPUT_PULLUP
+
+Display Shows Random Pixels / Glitches
+
+Keep SPI wires short
+
+Avoid running wires near power supply lines
+
+Ensure solid ground connection
+
+
+📡 Required Telemetry Format
+
+The firmware expects serial data formatted like this:
+
+RPM:12345 MAX:13000 GEAR:3 DRS:0 PIT:0
+
+Sent at:
+
+115200 baud
+
+If using SimHub or custom telemetry software, ensure this format matches exactly.
