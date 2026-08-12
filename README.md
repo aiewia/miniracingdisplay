@@ -1,4 +1,4 @@
-# Sim Racing OLED Dash (RB19 Style)
+# Sim Racing OLED Dash
 
 🚧 **Work In Progress (WIP)** 🚧  
 This project is under active development. Expect bugs, incomplete features, and frequent changes.
